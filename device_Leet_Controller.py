@@ -19,8 +19,11 @@ import arrangement
 import time
 
 # Constants
-TICKS_PER_EIGHTH = 48  # 48 ticks = 1 eighth note at 96 PPQ
 MAX_NOTES = 8  # Number of notes to capture for one measure
+
+# Dynamic values (calculated based on tempo)
+ticks_per_eighth = 48  # Will be calculated dynamically based on FL Studio's PPQ
+current_tempo = 120.0  # Track the current tempo
 
 # Controller state
 recording_notes = []
@@ -30,6 +33,32 @@ playback_index = 0
 is_playing_back = False
 current_step = 0
 
+def calculate_ticks_per_eighth():
+    """
+    Calculate ticks per eighth note based on current FL Studio tempo.
+    FL Studio uses PPQ (Pulses Per Quarter note) system.
+    An eighth note is half a quarter note, so ticks = PPQ / 2.
+    """
+    # FL Studio typically uses 96 PPQ (can be 192 or higher in some versions)
+    ppq = 96  # FL Studio default PPQ
+    return ppq // 2  # Eighth note = half of quarter note
+
+def update_tempo():
+    """
+    Update the ticks_per_eighth value based on current tempo.
+    Called whenever tempo might have changed.
+    """
+    global ticks_per_eighth, current_tempo
+    
+    # Get current tempo from FL Studio
+    new_tempo = transport.getRunningTempo()
+    
+    if new_tempo != current_tempo:
+        current_tempo = new_tempo
+        ticks_per_eighth = calculate_ticks_per_eighth()
+        print(f"Tempo changed to {current_tempo} BPM")
+        print(f"Ticks per eighth note: {ticks_per_eighth}")
+
 def OnInit():
     """
     Called when FL Studio starts or when the script is reloaded.
@@ -37,6 +66,7 @@ def OnInit():
     """
     global recording_notes, is_recording, current_step
     global playback_notes, playback_index, is_playing_back
+    global ticks_per_eighth, current_tempo
     
     recording_notes = []
     is_recording = False
@@ -45,7 +75,12 @@ def OnInit():
     playback_index = 0
     is_playing_back = False
     
+    # Initialize tempo and ticks calculation
+    update_tempo()
+    
     print("Leet Controller Initialized")
+    print(f"Current tempo: {current_tempo} BPM")
+    print(f"Ticks per eighth note: {ticks_per_eighth}")
     print("Press any MIDI note 8 times to create a pattern")
     print("The controller will replay the notes for pattern creation")
 
@@ -166,7 +201,7 @@ def CreatePattern():
         for i, note_data in enumerate(recording_notes):
             note = note_data['note']
             velocity = note_data['velocity']
-            position = i * TICKS_PER_EIGHTH
+            position = i * ticks_per_eighth
             
             print(f"  Note {i+1}: MIDI note {note}, velocity {velocity}, position {position} ticks")
         
@@ -195,7 +230,7 @@ def OnIdle():
         current_pos = transport.getSongPos()
         
         if playback_index < len(playback_notes):
-            expected_pos = playback_index * TICKS_PER_EIGHTH
+            expected_pos = playback_index * ticks_per_eighth
             
             # Check if it's time to play the next note
             if current_pos >= expected_pos:
@@ -225,11 +260,14 @@ def OnIdle():
 def OnRefresh(flags):
     """
     Called when the script needs to refresh its state.
+    Use this to detect tempo changes.
     
     Args:
         flags: Refresh flags indicating what changed
     """
-    pass
+    # HW_Dirty_Tempo flag = 16 (tempo changed)
+    if flags & 16:  # Tempo changed
+        update_tempo()
 
 
 def OnUpdateBeatIndicator(value):
