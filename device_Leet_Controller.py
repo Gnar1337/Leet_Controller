@@ -35,9 +35,10 @@ current_step = 0
 
 def calculate_ticks_per_eighth():
     """
-    Calculate ticks per eighth note based on current FL Studio tempo.
+    Calculate ticks per eighth note based on FL Studio's PPQ.
     FL Studio uses PPQ (Pulses Per Quarter note) system.
     An eighth note is half a quarter note, so ticks = PPQ / 2.
+    Note: PPQ is independent of tempo - it's a resolution setting.
     """
     # FL Studio typically uses 96 PPQ (can be 192 or higher in some versions)
     ppq = 96  # FL Studio default PPQ
@@ -45,8 +46,10 @@ def calculate_ticks_per_eighth():
 
 def update_tempo():
     """
-    Update the ticks_per_eighth value based on current tempo.
+    Track tempo changes and update the ticks_per_eighth value if needed.
     Called whenever tempo might have changed.
+    Note: While ticks_per_eighth depends on PPQ (not tempo), this function
+    tracks tempo changes to ensure timing calculations stay synchronized.
     """
     global ticks_per_eighth, current_tempo
     
