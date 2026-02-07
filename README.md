@@ -69,10 +69,12 @@ For direct pattern manipulation (if supported in your FL Studio version), the sc
 ## API Reference
 
 This script implements the following FL Studio MIDI script callbacks:
-- `OnInit()` - Initialization
-- `OnDeInit()` - Cleanup
-- `OnMidiIn(event)` - MIDI input processing
-- `OnNoteOn(event)` - Note processing
+- `OnInit()` - Initialization and state setup
+- `OnDeInit()` - Cleanup when script is unloaded
+- `OnMidiIn(event)` - MIDI input processing and event routing
+- `OnNoteOn(event)` - Note capture and recording logic
+- `OnIdle()` - Continuous callback for automated note playback during recording
+- Additional callbacks (OnRefresh, OnUpdateBeatIndicator, etc.) for FL Studio compatibility
 
 ## License
 

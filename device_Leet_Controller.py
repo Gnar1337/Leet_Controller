@@ -18,15 +18,17 @@ import playlist
 import arrangement
 import time
 
+# Constants
+TICKS_PER_EIGHTH = 48  # 48 ticks = 1 eighth note at 96 PPQ
+MAX_NOTES = 8  # Number of notes to capture for one measure
+
 # Controller state
 recording_notes = []
 is_recording = False
 playback_notes = []
 playback_index = 0
 is_playing_back = False
-max_notes = 8
 current_step = 0
-playback_timer = 0
 
 def OnInit():
     """
@@ -34,7 +36,7 @@ def OnInit():
     Initialize the controller state.
     """
     global recording_notes, is_recording, current_step
-    global playback_notes, playback_index, is_playing_back, playback_timer
+    global playback_notes, playback_index, is_playing_back
     
     recording_notes = []
     is_recording = False
@@ -42,7 +44,6 @@ def OnInit():
     playback_notes = []
     playback_index = 0
     is_playing_back = False
-    playback_timer = 0
     
     print("Leet Controller Initialized")
     print("Press any MIDI note 8 times to create a pattern")
@@ -84,7 +85,7 @@ def OnNoteOn(event):
     Args:
         event: MIDI event object containing note information
     """
-    global recording_notes, is_recording, current_step, max_notes
+    global recording_notes, is_recording, current_step
     
     note_number = event.data1
     velocity = event.data2
@@ -101,7 +102,7 @@ def OnNoteOn(event):
         print("Started recording notes...")
     
     # Record the note
-    if len(recording_notes) < max_notes:
+    if len(recording_notes) < MAX_NOTES:
         recording_notes.append({
             'note': note_number,
             'velocity': velocity,
@@ -109,10 +110,10 @@ def OnNoteOn(event):
         })
         current_step += 1
         
-        print(f"Note {len(recording_notes)}/{max_notes} recorded: Note {note_number}, Velocity {velocity}")
+        print(f"Note {len(recording_notes)}/{MAX_NOTES} recorded: Note {note_number}, Velocity {velocity}")
         
         # When we have all 8 notes, create the pattern
-        if len(recording_notes) == max_notes:
+        if len(recording_notes) == MAX_NOTES:
             CreatePattern()
             # Reset for next recording
             is_recording = False
@@ -131,8 +132,8 @@ def CreatePattern():
     """
     global recording_notes, playback_notes, playback_index, is_playing_back
     
-    if len(recording_notes) != 8:
-        print(f"Error: Need exactly 8 notes, but have {len(recording_notes)}")
+    if len(recording_notes) != MAX_NOTES:
+        print(f"Error: Need exactly {MAX_NOTES} notes, but have {len(recording_notes)}")
         return
     
     try:
@@ -161,30 +162,13 @@ def CreatePattern():
         print("  3. Press Play - the notes will be automatically played back")
         print("  4. The pattern will be created with your 8 notes")
         
-        # Alternative: If FL Studio API supports it, send notes directly
-        # This approach attempts to use available API methods
-        ticks_per_eighth = 48
-        
+        # Log captured notes with their timing information
         for i, note_data in enumerate(recording_notes):
             note = note_data['note']
             velocity = note_data['velocity']
-            position = i * ticks_per_eighth
+            position = i * TICKS_PER_EIGHTH
             
             print(f"  Note {i+1}: MIDI note {note}, velocity {velocity}, position {position} ticks")
-            
-            # Try to use channel methods if available
-            try:
-                # Some FL Studio versions support direct note input via channels
-                # This would be the ideal method
-                channel = channels.selectedChannel()
-                if channel >= 0:
-                    # Attempt direct note addition
-                    # Note: This API might not be available in all FL versions
-                    # channels.processRECEvent(note, velocity, REC_MIDINote, 0, 0, channel)
-                    pass
-            except (AttributeError, NameError):
-                # API not available
-                pass
         
         print("\nNotes captured successfully!")
         print(f"Total notes: {len(recording_notes)}")
@@ -200,7 +184,7 @@ def OnIdle():
     Called continuously when FL Studio is idle.
     Used for automated playback of captured notes during recording.
     """
-    global playback_notes, playback_index, is_playing_back, playback_timer
+    global playback_notes, playback_index, is_playing_back
     
     if not is_playing_back or len(playback_notes) == 0:
         return
@@ -210,11 +194,8 @@ def OnIdle():
         # Get current song position in ticks
         current_pos = transport.getSongPos()
         
-        # Calculate expected position for next note
-        ticks_per_eighth = 48
-        
         if playback_index < len(playback_notes):
-            expected_pos = playback_index * ticks_per_eighth
+            expected_pos = playback_index * TICKS_PER_EIGHTH
             
             # Check if it's time to play the next note
             if current_pos >= expected_pos:
@@ -228,9 +209,9 @@ def OnIdle():
                     try:
                         # Trigger the note
                         channels.midiNoteOn(channel, note, velocity)
-                        print(f"Playing back note {playback_index + 1}/8: {note}")
-                    except:
-                        pass
+                        print(f"Playing back note {playback_index + 1}/{MAX_NOTES}: {note}")
+                    except (AttributeError, RuntimeError) as e:
+                        print(f"Warning: Could not play back note: {e}")
                 
                 playback_index += 1
         else:
