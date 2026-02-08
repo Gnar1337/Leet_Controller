@@ -15,6 +15,14 @@ import ui
 # Constants
 TICKS_PER_EIGHTH = 48  # 48 ticks = 1 eighth note at 96 PPQ
 MAX_NOTES = 8  # Number of notes to capture for one measure
+BEATS_PER_EIGHTH = 0.5  # Each eighth note is 0.5 beats in 4/4 time
+
+# Table column widths for pattern display
+COL_NUM_WIDTH = 4
+COL_NOTE_WIDTH = 12
+COL_VEL_WIDTH = 10
+COL_TICKS_WIDTH = 20
+COL_BEATS_WIDTH = 15
 
 # Controller state
 recording_notes = []
@@ -146,17 +154,17 @@ def CreatePattern():
         print(f"  Total Duration: 1 measure (8 eighth notes)")
         
         print("\nNotes in pattern:")
-        print(f"  {'#':<4} {'MIDI Note':<12} {'Velocity':<10} {'Position (ticks)':<20} {'Position (beats)':<15}")
-        print(f"  {'-'*4} {'-'*12} {'-'*10} {'-'*20} {'-'*15}")
+        print(f"  {'#':<{COL_NUM_WIDTH}} {'MIDI Note':<{COL_NOTE_WIDTH}} {'Velocity':<{COL_VEL_WIDTH}} {'Position (ticks)':<{COL_TICKS_WIDTH}} {'Position (beats)':<{COL_BEATS_WIDTH}}")
+        print(f"  {'-'*COL_NUM_WIDTH} {'-'*COL_NOTE_WIDTH} {'-'*COL_VEL_WIDTH} {'-'*COL_TICKS_WIDTH} {'-'*COL_BEATS_WIDTH}")
         
         # Log captured notes with their timing information
         for i, note_data in enumerate(recording_notes):
             note = note_data['note']
             velocity = note_data['velocity']
             position_ticks = i * TICKS_PER_EIGHTH
-            position_beats = i * 0.5  # Each eighth note is 0.5 beats
+            position_beats = i * BEATS_PER_EIGHTH
             
-            print(f"  {i+1:<4} {note:<12} {velocity:<10} {position_ticks:<20} {position_beats:<15.1f}")
+            print(f"  {i+1:<{COL_NUM_WIDTH}} {note:<{COL_NOTE_WIDTH}} {velocity:<{COL_VEL_WIDTH}} {position_ticks:<{COL_TICKS_WIDTH}} {position_beats:<{COL_BEATS_WIDTH}.1f}")
         
         print(f"\n{'='*60}")
         print("Pattern ready for manual entry into FL Studio piano roll!")
