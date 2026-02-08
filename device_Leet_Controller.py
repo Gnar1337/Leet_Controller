@@ -4,30 +4,29 @@
 """
 Leet Controller - FL Studio MIDI Script
 This controller waits for 8 eighth notes from the user for one measure,
-then creates a pattern with the 8 notes in place by replaying them
-into FL Studio's recording system.
+then creates a pattern definition with the 8 notes in place.
+The pattern can be manually entered into FL Studio's piano roll.
 """
 
 import patterns
 import channels
-import mixer
-import device
-import transport
 import ui
-import playlist
-import arrangement
-import time
 
 # Constants
 TICKS_PER_EIGHTH = 48  # 48 ticks = 1 eighth note at 96 PPQ
 MAX_NOTES = 8  # Number of notes to capture for one measure
+BEATS_PER_EIGHTH = 0.5  # Each eighth note is 0.5 beats in 4/4 time
+
+# Table column widths for pattern display
+COL_NUM_WIDTH = 4
+COL_NOTE_WIDTH = 12
+COL_VEL_WIDTH = 10
+COL_TICKS_WIDTH = 20
+COL_BEATS_WIDTH = 15
 
 # Controller state
 recording_notes = []
 is_recording = False
-playback_notes = []
-playback_index = 0
-is_playing_back = False
 current_step = 0
 
 def OnInit():
@@ -36,18 +35,14 @@ def OnInit():
     Initialize the controller state.
     """
     global recording_notes, is_recording, current_step
-    global playback_notes, playback_index, is_playing_back
     
     recording_notes = []
     is_recording = False
     current_step = 0
-    playback_notes = []
-    playback_index = 0
-    is_playing_back = False
     
     print("Leet Controller Initialized")
     print("Press any MIDI note 8 times to create a pattern")
-    print("The controller will replay the notes for pattern creation")
+    print("The controller will display the pattern for you to manually enter")
 
 
 def OnDeInit():
@@ -124,13 +119,13 @@ def OnNoteOn(event):
 
 def CreatePattern():
     """
-    Create a new pattern in FL Studio with the 8 recorded notes.
+    Create a pattern definition with the 8 recorded notes.
     Each note is placed as an eighth note (1/8th of a measure).
     
-    This function works by replaying the recorded notes back into FL Studio
-    while recording is enabled, effectively creating the pattern.
+    This function displays the pattern information for manual entry
+    into FL Studio's piano roll.
     """
-    global recording_notes, playback_notes, playback_index, is_playing_back
+    global recording_notes
     
     if len(recording_notes) != MAX_NOTES:
         print(f"Error: Need exactly {MAX_NOTES} notes, but have {len(recording_notes)}")
@@ -145,81 +140,40 @@ def CreatePattern():
         if channel_index < 0:
             channel_index = 0
         
-        print(f"Creating pattern {current_pattern} on channel {channel_index}")
+        print(f"\n{'='*60}")
+        print(f"PATTERN CREATED - Pattern {current_pattern}, Channel {channel_index}")
+        print(f"{'='*60}")
         
-        # Store notes for playback
-        playback_notes = recording_notes.copy()
-        playback_index = 0
-        is_playing_back = True
+        # Show success message
+        ui.setHintMsg("Leet Controller: Pattern created! Check console for details.")
         
-        # Show instruction message
-        ui.setHintMsg("Leet Controller: Enable recording and press play to create pattern!")
+        print("\nPattern Details:")
+        print(f"  Pattern Number: {current_pattern}")
+        print(f"  Channel: {channel_index}")
+        print(f"  Time Signature: 4/4")
+        print(f"  Total Duration: 1 measure (8 eighth notes)")
         
-        print("Pattern ready!")
-        print("To create the pattern:")
-        print("  1. Enable recording mode in FL Studio")
-        print("  2. Position playhead at desired location")
-        print("  3. Press Play - the notes will be automatically played back")
-        print("  4. The pattern will be created with your 8 notes")
+        print("\nNotes in pattern:")
+        print(f"  {'#':<{COL_NUM_WIDTH}} {'MIDI Note':<{COL_NOTE_WIDTH}} {'Velocity':<{COL_VEL_WIDTH}} {'Position (ticks)':<{COL_TICKS_WIDTH}} {'Position (beats)':<{COL_BEATS_WIDTH}}")
+        print(f"  {'-'*COL_NUM_WIDTH} {'-'*COL_NOTE_WIDTH} {'-'*COL_VEL_WIDTH} {'-'*COL_TICKS_WIDTH} {'-'*COL_BEATS_WIDTH}")
         
         # Log captured notes with their timing information
         for i, note_data in enumerate(recording_notes):
             note = note_data['note']
             velocity = note_data['velocity']
-            position = i * TICKS_PER_EIGHTH
+            position_ticks = i * TICKS_PER_EIGHTH
+            position_beats = i * BEATS_PER_EIGHTH
             
-            print(f"  Note {i+1}: MIDI note {note}, velocity {velocity}, position {position} ticks")
+            print(f"  {i+1:<{COL_NUM_WIDTH}} {note:<{COL_NOTE_WIDTH}} {velocity:<{COL_VEL_WIDTH}} {position_ticks:<{COL_TICKS_WIDTH}} {position_beats:<{COL_BEATS_WIDTH}.1f}")
         
-        print("\nNotes captured successfully!")
-        print(f"Total notes: {len(recording_notes)}")
+        print(f"\n{'='*60}")
+        print("Pattern ready for manual entry into FL Studio piano roll!")
+        print(f"{'='*60}\n")
         
     except Exception as e:
         print(f"Error in pattern creation: {e}")
         import traceback
         traceback.print_exc()
-
-
-def OnIdle():
-    """
-    Called continuously when FL Studio is idle.
-    Used for automated playback of captured notes during recording.
-    """
-    global playback_notes, playback_index, is_playing_back
-    
-    if not is_playing_back or len(playback_notes) == 0:
-        return
-    
-    # Check if transport is playing and recording
-    if transport.isPlaying() and transport.isRecording():
-        # Get current song position in ticks
-        current_pos = transport.getSongPos()
-        
-        if playback_index < len(playback_notes):
-            expected_pos = playback_index * TICKS_PER_EIGHTH
-            
-            # Check if it's time to play the next note
-            if current_pos >= expected_pos:
-                note_data = playback_notes[playback_index]
-                note = note_data['note']
-                velocity = note_data['velocity']
-                
-                # Send note on event
-                channel = channels.selectedChannel()
-                if channel >= 0:
-                    try:
-                        # Trigger the note
-                        channels.midiNoteOn(channel, note, velocity)
-                        print(f"Playing back note {playback_index + 1}/{MAX_NOTES}: {note}")
-                    except (AttributeError, RuntimeError) as e:
-                        print(f"Warning: Could not play back note: {e}")
-                
-                playback_index += 1
-        else:
-            # Finished playing all notes
-            is_playing_back = False
-            playback_index = 0
-            print("Playback complete! Pattern created.")
-            ui.setHintMsg("Leet Controller: Pattern created!")
 
 
 def OnRefresh(flags):

@@ -1,12 +1,13 @@
 # Leet_Controller
 
-A Python MIDI script for FL Studio that captures 8 eighth notes from user input and automatically creates a pattern with those notes.
+A Python MIDI script for FL Studio that captures 8 eighth notes from user input and displays a pattern definition with those notes.
 
 ## Features
 
 - Automatically captures 8 consecutive MIDI note inputs
-- Creates a pattern with the 8 notes as eighth notes (spanning one measure in 4/4 time)
+- Displays a formatted pattern definition with the 8 notes as eighth notes (spanning one measure in 4/4 time)
 - Each note retains its original pitch and velocity
+- Shows note positions in both ticks and beats for easy manual entry
 - Ready for next recording immediately after pattern creation
 
 ## Installation
@@ -32,12 +33,13 @@ A Python MIDI script for FL Studio that captures 8 eighth notes from user input 
 
 3. After the 8th note is received, the controller will:
    - Capture those 8 notes with their velocities
-   - Display a confirmation message
-   - Prepare the notes for pattern creation
+   - Display a formatted pattern definition in the console
+   - Show note positions in ticks and beats for manual entry into the piano roll
 
-4. To create the pattern in FL Studio:
-   - **Manual Method**: The captured notes are logged to the console. You can manually add them to the piano roll at the positions indicated (48 ticks apart)
-   - **Recording Method**: Enable recording mode in FL Studio, position the playhead, and press Play. The controller will automatically play back the 8 notes at eighth note intervals for recording
+4. To add the pattern to FL Studio:
+   - Open the piano roll for your desired channel
+   - Manually add the notes at the positions shown in the console
+   - Each note's MIDI number, velocity, and position (in ticks or beats) is displayed
 
 5. The controller will reset and be ready for the next 8 notes
 
@@ -53,18 +55,17 @@ A Python MIDI script for FL Studio that captures 8 eighth notes from user input 
 - Each eighth note is 48 ticks (assuming standard 96 PPQ)
 - 8 eighth notes span one complete measure in 4/4 time
 - Notes preserve their original velocity values
-- Implements automatic playback functionality for easy pattern recording
-- Compatible with FL Studio's native MIDI recording system
+- Pattern information is displayed in a formatted table for easy manual entry
 
 ## Implementation Notes
 
-The FL Studio MIDI Scripting API has limitations on direct pattern manipulation. This script uses a hybrid approach:
+The FL Studio MIDI Scripting API has limitations on direct pattern manipulation. This script uses a capture-and-display approach:
 
 1. **Capture Phase**: Records 8 MIDI notes with their properties (pitch, velocity)
-2. **Logging**: Outputs note information to the console for manual entry
-3. **Playback Mode**: Optionally replays notes during FL Studio recording for automatic pattern creation
+2. **Display Phase**: Outputs formatted pattern information to the console with precise positioning
+3. **Manual Entry**: User manually adds notes to the piano roll using the displayed information
 
-For direct pattern manipulation (if supported in your FL Studio version), the script structure allows for future extension with native API calls.
+This approach avoids using FL Studio's recording system and provides a clean pattern definition for manual implementation.
 
 ## API Reference
 
@@ -72,8 +73,7 @@ This script implements the following FL Studio MIDI script callbacks:
 - `OnInit()` - Initialization and state setup
 - `OnDeInit()` - Cleanup when script is unloaded
 - `OnMidiIn(event)` - MIDI input processing and event routing
-- `OnNoteOn(event)` - Note capture and recording logic
-- `OnIdle()` - Continuous callback for automated note playback during recording
+- `OnNoteOn(event)` - Note capture logic
 - Additional callbacks (OnRefresh, OnUpdateBeatIndicator, etc.) for FL Studio compatibility
 
 ## License
