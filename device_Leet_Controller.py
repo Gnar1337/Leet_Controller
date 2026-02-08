@@ -10,13 +10,7 @@ The pattern can be manually entered into FL Studio's piano roll.
 
 import patterns
 import channels
-import mixer
-import device
-import transport
 import ui
-import playlist
-import arrangement
-import time
 
 # Constants
 TICKS_PER_EIGHTH = 48  # 48 ticks = 1 eighth note at 96 PPQ
